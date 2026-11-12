@@ -3,6 +3,8 @@
 一个带「场上融合」玩法的塔防游戏，TypeScript + PixiJS v8，纯前端，Mac 和 iPad 的浏览器都能玩。
 所有角色和场景都是代码绘制的原创美术，不含任何第三方素材。
 
+在线试玩：https://kaellee12.github.io/fusion-garden/
+
 ## 运行
 
 ```bash
