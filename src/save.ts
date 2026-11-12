@@ -8,9 +8,10 @@ export interface SaveData {
   seen: string[];                  // 已合成过的融合植物
   best: Record<string, number>;    // 无尽模式最高波数
   mute: boolean;
+  autoSun: boolean;               // 自动收集阳光
 }
 const KEY = 'fusion-garden-save-v1';
-const fresh = (): SaveData => ({ done: [], opened: [], unlocked: ['sunbud', 'seedling'], seen: [], best: {}, mute: false });
+const fresh = (): SaveData => ({ done: [], opened: [], unlocked: ['sunbud', 'seedling'], seen: [], best: {}, mute: false, autoSun: false });
 
 export let save: SaveData = fresh();
 export function loadSave() {

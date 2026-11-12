@@ -50,6 +50,7 @@ interface Card { def: PlantDef; cd: number; view: Container; mask: Graphics; fra
 type Sel = { type: 'card'; card: Card } | { type: 'shovel' } | { type: 'glove'; from?: Plant } | null;
 
 const PROJ_SPEED = 440;
+const SUN_BONUS = 100; // 加阳光按钮每次增加的数量
 
 export class Battle {
   view = new Container();
@@ -125,6 +126,13 @@ export class Battle {
     const ico = new Graphics(); drawSun(ico, 22); ico.position.set(73, 36);
     this.sunText = label(String(this.sun), 26, 0xfff3a8, { stroke: 0x3a2f22 }); this.sunText.anchor.set(0.5); this.sunText.position.set(73, 78);
     this.hud.addChild(sunBox, ico, this.sunText);
+    // 自动收阳光开关（写入存档）与加阳光按钮
+    const autoText = () => (save.autoSun ? '自动收：开' : '自动收：关');
+    const auto = button(autoText(), 118, 38, () => { save.autoSun = !save.autoSun; writeSave(); auto.setText(autoText()); }, 0xb8862a, 18);
+    auto.position.set(14, 106);
+    const add = button(`+${SUN_BONUS} 阳光`, 118, 38, () => { if (this.paused || this.ended) return; sfx('sun'); this.setSun(this.sun + SUN_BONUS); this.popText(`+${SUN_BONUS}`, 73, 96, 0xffd23f); }, 0xd9962a, 18);
+    add.position.set(14, 152);
+    this.hud.addChild(auto, add);
     cardIds.forEach((id, i) => {
       const def = PLANTS[id];
       const v = new Container(); v.position.set(142 + i * 82, 6);
@@ -590,7 +598,7 @@ export class Battle {
     }
     for (const s of this.suns) {
       if (s.flying) { s.x += (73 - s.x) * Math.min(1, dt * 9); s.y += (40 - s.y) * Math.min(1, dt * 9); s.view.alpha -= dt * 2.2; if (s.view.alpha <= 0.05) s.life = -1; }
-      else { if (s.y < s.ty) s.y = Math.min(s.ty, s.y + 70 * dt); s.life -= dt; if (s.life <= 0) this.collect(s); }
+      else { if (s.y < s.ty) s.y = Math.min(s.ty, s.y + 70 * dt); s.life -= dt; if (s.life <= 0 || (save.autoSun && s.y >= s.ty)) this.collect(s); }
       s.view.position.set(s.x, s.y); s.view.rotation = Math.sin(t * 2 + s.ty) * 0.15; s.view.scale.set(1 + 0.05 * Math.sin(t * 5 + s.ty));
     }
     this.suns = this.suns.filter((s) => { if (s.flying && s.life < 0) { s.view.destroy({ children: true }); return false; } return true; });
