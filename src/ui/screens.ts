@@ -7,7 +7,7 @@ import { PlantView, plantIcon } from '../art/plantArt';
 import { ZombieView } from '../art/zombieArt';
 import { makeScene } from '../art/scene';
 import { button, label, panel, tappable } from './widgets';
-import { cardSlots, resetSave, save, unlockAll, writeSave } from '../save';
+import { cardSlots, isDone, isOpen, openLevel, resetSave, save, unlockAll, writeSave } from '../save';
 import { sfx } from '../audio';
 
 export interface Screen { view: Container; update?(dt: number): void; destroy?(): void }
@@ -42,7 +42,7 @@ export function menuScreen(nav: Nav): Screen {
   mk('冒险模式', 260, () => nav.levels());
   mk('无尽模式', 340, () => nav.endless(), 0x4f7fb6);
   mk('图鉴与配方', 420, () => nav.almanac(), 0x9b6bd6);
-  const prog = label(`进度 ${save.cleared}/${LEVELS.length} · 已发现融合 ${save.seen.length}/${ALL_PLANTS.length - BASE_PLANTS.length}`, 18, 0xffffff, { stroke: 0x1c2416 });
+  const prog = label(`进度 ${save.done.length}/${LEVELS.length} · 已发现融合 ${save.seen.length}/${ALL_PLANTS.length - BASE_PLANTS.length}`, 18, 0xffffff, { stroke: 0x1c2416 });
   prog.anchor.set(0.5); prog.position.set(W / 2, 510); view.addChild(prog);
 
   const mute = button(save.mute ? '声音：关' : '声音：开', 130, 44, () => { save.mute = !save.mute; writeSave(); mute.setText(save.mute ? '声音：关' : '声音：开'); }, 0x55604e, 18);
@@ -60,11 +60,13 @@ export function menuScreen(nav: Nav): Screen {
 export function levelScreen(nav: Nav): Screen {
   const view = backdrop('day', 0.55);
   header(view, '冒险模式', nav);
+  const hint = label('未解锁的关卡连点两次可手动解锁', 18, 0xffffff, { bold: false, stroke: 0x1c2416 }); hint.anchor.set(1, 0); hint.position.set(W - 70, 36); view.addChild(hint);
+  let armed: { id: number; restore: () => void } | null = null; // 等待二次确认的关卡
   CHAPTERS.forEach((ch, ci) => {
     const y = 110 + ci * 200;
     const t = label(ch.name, 26, 0xffffff, { stroke: 0x1c2416 }); t.position.set(70, y); view.addChild(t);
     for (let i = 0; i < 8; i++) {
-      const lv = LEVELS[ch.from + i], open = lv.id <= save.cleared + 1, done = lv.id <= save.cleared;
+      const lv = LEVELS[ch.from + i], open = isOpen(lv.id), done = isDone(lv.id);
       const b = new Container(); b.position.set(70 + i * 144, y + 44);
       const g = new Graphics().roundRect(0, 0, 130, 120, 14).fill(open ? (done ? 0x4f9a4a : 0xd9a441) : 0x4a4f56).stroke({ width: 3, color: 0xffffff, alpha: 0.3 });
       const n = label(`${ci + 1}-${i + 1}`, 34, 0xffffff, { stroke: 0x1c2416 }); n.anchor.set(0.5); n.position.set(65, 40);
@@ -73,7 +75,13 @@ export function levelScreen(nav: Nav): Screen {
       if (done) { const s = label('✓', 22, 0xfff3a8, { stroke: 0x1c2416 }); s.position.set(102, 4); b.addChild(s); }
       if (lv.unlock && !done && open) { const ic = plantIcon(PLANTS[lv.unlock].art, 0.3); ic.position.set(112, 116); b.addChild(ic); }
       b.alpha = open ? 1 : 0.6;
-      tappable(b, 130, 120, () => { if (!open) { sfx('deny'); return; } sfx('click'); nav.pick(lv.id); });
+      tappable(b, 130, 120, () => {
+        if (open) { sfx('click'); nav.pick(lv.id); return; }
+        if (armed?.id === lv.id) { sfx('win'); openLevel(lv.id); nav.levels(); return; }
+        armed?.restore();
+        armed = { id: lv.id, restore: () => { nm.text = '未解锁'; b.alpha = 0.6; } };
+        nm.text = '再点解锁'; b.alpha = 1; sfx('click');
+      });
       view.addChild(b);
     }
   });

@@ -4,7 +4,7 @@ import { H, W, type SceneId } from './types';
 import { LEVELS, endlessLevel } from './data/levels';
 import { Battle } from './game/battle';
 import { almanacScreen, endlessScreen, levelScreen, menuScreen, pickScreen, type Nav, type Screen } from './ui/screens';
-import { loadSave, save, writeSave } from './save';
+import { loadSave, markDone, save, writeSave } from './save';
 import { unlockAudio } from './audio';
 
 async function boot() {
@@ -37,9 +37,7 @@ async function boot() {
       const lv = id > 0 ? LEVELS[id - 1] : endlessLevel(scene!);
       const battle = new Battle(lv, cards, (r, wave) => {
         if (r === 'win') {
-          if (lv.id > save.cleared) save.cleared = lv.id;
-          if (lv.unlock && !save.unlocked.includes(lv.unlock)) save.unlocked.push(lv.unlock);
-          writeSave();
+          if (lv.id > 0) markDone(lv.id);
         } else if (r === 'lose') {
           if (lv.id < 0 && wave > (save.best[lv.scene] ?? 0)) { save.best[lv.scene] = wave; writeSave(); }
         } else if (r === 'retry') nav.play(id, cards, scene);
