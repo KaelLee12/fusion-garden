@@ -29,11 +29,11 @@ class Plant {
 }
 class Zombie {
   hp: number; armor: number; shield: number; art: ZombieView;
-  slowT = 0; freezeT = 0; flashT = 0; atkT = 0.8; biteT = 0; summonT: number;
+  slowT = 0; freezeT = 0; flashT = 0; atkT = 0.8; biteT = 0; summonT: number; blinkT: number;
   jumped = false; jumpT = 0; jumpFrom = 0; dead = false; deathT = 0; eating = false;
   constructor(public def: ZombieDef, public row: number, public x: number) {
     this.hp = def.hp; this.armor = def.armor ?? 0; this.shield = def.shield ?? 0;
-    this.art = new ZombieView(def); this.summonT = def.summon ? def.summon.interval * 0.6 : 0;
+    this.art = new ZombieView(def); this.summonT = def.summon ? def.summon.interval * 0.6 : 0; this.blinkT = def.blink ?? 0;
   }
 }
 interface Proj {
@@ -334,9 +334,13 @@ export class Battle {
     // 开局几波从 1 起步，逐渐爬到关卡设定的强度
     const base = 1 + (lv.budget - 1) * Math.min(1, i / 6) + lv.growth * i * 0.6;
     let budget = base; if (big) budget *= 1.7;
-    const pool = lv.pool.filter((id) => id !== 'king');
+    const pool = lv.pool.filter((id) => !ZOMBIES[id].boss);
     const spread = big ? 6 : 3; let n = 0;
-    if (lv.pool.includes('king') && (last || (lv.id < 0 && (i + 1) % 20 === 0))) { this.pendingSpawns.push({ t: 1, id: 'king', row: Math.floor(this.rows / 2), }); budget *= 0.6; }
+    // 首领：尸王压轴（无尽每 20 波），影魇在关卡中段现身（无尽第 10、30、50…波）
+    let boss: string | undefined;
+    if (lv.pool.includes('king') && (last || (lv.id < 0 && (i + 1) % 20 === 0))) boss = 'king';
+    else if (lv.pool.includes('wraith') && (lv.id < 0 ? (i + 1) % 20 === 10 : i === Math.floor(lv.waves / 2) - 1)) boss = 'wraith';
+    if (boss) { this.pendingSpawns.push({ t: 1, id: boss, row: Math.floor(this.rows / 2) }); budget *= 0.6; }
     while (budget >= 1 && n < 45) {
       // 贵的僵尸不会太早出现：4 点以上至少第 4 波，7 点以上至少第 7 波
       const ok = pool.filter((id) => { const c = ZOMBIES[id].cost; return c <= Math.max(1, budget) && c <= Math.max(1, base * 0.7) && (c < 4 || i >= 3) && (c < 7 || i >= 6); });
@@ -346,6 +350,7 @@ export class Battle {
     }
     if (n === 0) this.pendingSpawns.push({ t: 0, id: 'walker', row: Math.floor(Math.random() * this.rows) });
     if (big) { this.banner.text = last ? '最后一波！' : '一大波僵尸来袭！'; this.banner.visible = true; this.bannerT = 2.6; sfx('wave'); }
+    else if (boss) { this.banner.text = `${ZOMBIES[boss].name}现身！`; this.banner.visible = true; this.bannerT = 2.6; sfx('wave'); }
   }
   private get aliveCount() { return this.zombies.reduce((n, z) => n + (z.dead ? 0 : 1), 0) + this.pendingSpawns.length; }
 
@@ -506,18 +511,43 @@ export class Battle {
     const cx = this.colX(c); return z.x <= cx + 40 && z.x >= cx - 44 ? p : undefined;
   }
 
+  /** 除当前行外植物最少的一行（并列时随机） */
+  private weakestRow(current: number): number {
+    let best: number[] = [], min = Infinity;
+    for (let r = 0; r < this.rows; r++) {
+      if (r === current) continue;
+      const n = this.grid[r].reduce((k, tile) => k + (tile.plant && !tile.plant.dead ? 1 : 0), 0);
+      if (n < min) { min = n; best = [r]; } else if (n === min) best.push(r);
+    }
+    return best.length ? best[Math.floor(Math.random() * best.length)] : current;
+  }
+
   private updateZombies(dt: number, t: number) {
     for (const z of this.zombies) {
-      const v = z.art.view, baseY = this.rowY(z.row);
+      const v = z.art.view; let baseY = this.rowY(z.row);
       if (z.dead) { z.deathT -= dt; v.alpha = Math.max(0, z.deathT / 0.5); v.rotation = (1 - z.deathT / 0.5) * 0.9; v.position.set(z.x, baseY); continue; }
       if (z.flashT > 0) z.flashT -= dt;
-      v.tint = z.flashT > 0 ? 0xff8a8a : z.freezeT > 0 ? 0x8fc8ff : z.slowT > 0 ? 0xa8d8ff : 0xffffff;
+      const rage = z.def.enrage && z.hp < z.def.hp / 2 ? z.def.enrage : 1;
+      v.tint = z.flashT > 0 ? 0xff8a8a : z.freezeT > 0 ? 0x8fc8ff : z.slowT > 0 ? 0xa8d8ff : rage > 1 ? 0xffb4d8 : 0xffffff;
       z.art.setFrozen(z.freezeT > 0);
       if (z.def.hp >= 3000) z.art.drawHp(z.hp / z.def.hp);
       if (z.freezeT > 0) { z.freezeT -= dt; v.position.set(z.x, baseY); continue; }
       const sf = z.slowT > 0 ? 0.5 : 1; if (z.slowT > 0) z.slowT -= dt;
       let moving = false, yOff = 0;
       z.eating = false;
+      if (z.def.blink && z.x < GRID_X + COLS * CELL_W) {
+        z.blinkT -= dt * rage;
+        if (z.blinkT <= 0) {
+          z.blinkT = z.def.blink;
+          const row = this.weakestRow(z.row);
+          if (row !== z.row) {
+            this.ring(z.x, baseY - 50, 80, 0x7ff0e0, 0.45);
+            z.row = row; baseY = this.rowY(row);
+            z.art.setSwim(isWaterRow(this.level.scene, row)); v.zIndex = row * 100 + 50;
+            this.ring(z.x, baseY - 50, 80, 0x7ff0e0, 0.45); sfx('freeze');
+          }
+        }
+      }
       if (z.jumpT > 0) {
         z.jumpT -= dt; const k = 1 - Math.max(0, z.jumpT) / 0.55;
         z.x = z.jumpFrom - 140 * k; yOff = -Math.sin(Math.PI * k) * 70;
@@ -529,7 +559,7 @@ export class Battle {
           if (z.def.smash) { z.atkT -= dt * sf; if (z.atkT <= 0) { z.atkT = 1.5; b.hp = 0; sfx('boom'); this.ring(this.colX(b.col), baseY - 20, 60, 0xd9c2a0, 0.3); } }
           else { b.hp -= z.def.dps * dt * sf; b.flashT = 0.06; z.biteT -= dt; if (z.biteT <= 0) { z.biteT = 0.45; sfx('bite'); } }
           if (b.def.thorns) { const keep = z.flashT; this.hurt(z, b.def.thorns * dt); z.flashT = keep; }
-        } else { z.x -= (z.def.leap && z.jumped ? 21 : z.def.speed) * sf * dt; moving = true; }
+        } else { z.x -= (z.def.leap && z.jumped ? 21 : z.def.speed) * rage * sf * dt; moving = true; }
       }
       if (z.def.summon && z.x < GRID_X + COLS * CELL_W) {
         z.summonT -= dt;
@@ -555,7 +585,7 @@ export class Battle {
     for (const gd of this.guards) if (gd.active) {
       gd.x += 620 * dt; gd.view.x = gd.x; gd.view.rotation += dt * 12;
       const row = this.guards.indexOf(gd);
-      for (const z of this.zombies) if (!z.dead && z.row === row && Math.abs(z.x - gd.x) < 46) this.hurt(z, z.def.id === 'king' ? 60 : 99999);
+      for (const z of this.zombies) if (!z.dead && z.row === row && Math.abs(z.x - gd.x) < 46) this.hurt(z, z.def.boss ? 60 : 99999);
       if (gd.x > W + 60) { gd.active = false; gd.view.visible = false; }
     }
     for (const s of this.suns) {

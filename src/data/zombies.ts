@@ -10,8 +10,10 @@ const LIST: ZombieDef[] = [
   { id: 'necro', name: '招魂尸', desc: '隔一会儿就在身边召出行尸。', hp: 600, speed: 15, dps: 100, cost: 7, look: 'necro',
     summon: { interval: 9, id: 'walker', count: 2 } },
   { id: 'brute', name: '巨尸', desc: '血量极高，一锤砸扁植物。', hp: 3000, speed: 14, dps: 0, cost: 10, smash: true, scale: 1.5, look: 'brute' },
-  { id: 'king', name: '尸王', desc: '关底首领：砸扁植物，并不断召唤铁锅尸。', hp: 14000, speed: 7, dps: 0, cost: 60, smash: true, scale: 1.9, look: 'king',
+  { id: 'king', name: '尸王', desc: '关底首领：砸扁植物，并不断召唤铁锅尸。', hp: 14000, speed: 7, dps: 0, cost: 60, smash: true, scale: 1.9, look: 'king', boss: true,
     summon: { interval: 11, id: 'pot', count: 3 } },
+  { id: 'wraith', name: '影魇', desc: '游荡首领：每隔一阵闪现到防守最薄弱的一行，啃食极快；半血以下会狂暴，移动和闪现都更快。', hp: 11000, speed: 9, dps: 450, cost: 60, scale: 1.75, look: 'wraith',
+    boss: true, blink: 9, enrage: 2 },
 ];
 
 export const ZOMBIES: Record<string, ZombieDef> = {};

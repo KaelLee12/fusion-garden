@@ -5,7 +5,7 @@ import { shade } from './util';
 const SKIN = 0xa9c98a, SKIN_D = 0x6f8a58, PANTS = 0x3a4458;
 const CLOTH: Record<string, number> = {
   walker: 0x6a7fa0, pot: 0x8a6f5a, runner: 0xc05656, knight: 0x707a88, shield: 0x7a6a4a,
-  leaper: 0x4f9a8a, necro: 0x4a3a6a, brute: 0x5a6a4a, king: 0x7a2a3a,
+  leaper: 0x4f9a8a, necro: 0x4a3a6a, brute: 0x5a6a4a, king: 0x7a2a3a, wraith: 0x27323f,
 };
 
 /** 僵尸外观：原点在脚底中心，面朝左 */
@@ -44,11 +44,12 @@ export class ZombieView {
     this.armB.position.set(6, -72); this.rig.addChild(this.armB);
     // 躯干
     const torso = new Graphics();
-    const tw = look === 'brute' || look === 'king' ? 27 : 20, th = look === 'necro' ? 62 : 50;
+    const tw = look === 'brute' || look === 'king' ? 27 : look === 'wraith' ? 24 : 20, th = look === 'necro' || look === 'wraith' ? 62 : 50;
     torso.roundRect(-tw, -88, tw * 2, th, 10).fill(cloth).stroke({ width: 2.5, color: cd });
     for (let i = 0; i < 4; i++) { const x = -tw + (tw * 2 / 4) * i; torso.poly([x, -88 + th - 2, x + tw / 4, -88 + th + 7, x + tw / 2, -88 + th - 2]).fill(cloth); }
     if (look === 'runner') torso.rect(-tw, -72, tw * 2, 6).fill(0xffffff);
     if (look === 'king') { torso.rect(-tw, -88, tw * 2, 6).fill(0xffd23f); torso.poly([tw - 4, -86, tw + 22, -30, tw - 4, -44]).fill(0x5a1a2a).stroke({ width: 2, color: 0x3a0f1a }); }
+    if (look === 'wraith') { torso.poly([-10, -80, 0, -66, 10, -80]).fill(0x7ff0e0); torso.rect(-tw, -52, tw * 2, 5).fill(0x121820); }
     if (look === 'walker' || look === 'pot') { torso.poly([-6, -70, 2, -62, -8, -56]).fill(cd); }
     this.rig.addChild(torso);
     // 头
@@ -68,6 +69,7 @@ export class ZombieView {
     this.armF.roundRect(-32, -5, 34, 10, 5).fill(SKIN).stroke({ width: 2, color: SKIN_D });
     if (look === 'brute' || look === 'king') { this.armF.roundRect(-40, -46, 13, 50, 6).fill(0x7a5a3a).stroke({ width: 2.5, color: 0x4a321e }); this.armF.circle(-33, -44, 12).fill(0x6a4a2e).stroke({ width: 2.5, color: 0x4a321e }); }
     if (look === 'necro') { this.armF.rect(-31, -52, 5, 74).fill(0x6a4a2e); this.armF.circle(-28, -56, 9).fill(0x9bf06b).stroke({ width: 2, color: 0x3f7a2a }); this.armF.circle(-28, -56, 15).fill({ color: 0x9bf06b, alpha: 0.25 }); }
+    if (look === 'wraith') { this.armF.rect(-29, 2, 2.5, 20).fill(0x121820); this.armF.roundRect(-36, 20, 16, 20, 4).fill(0x121820).stroke({ width: 2, color: 0x7ff0e0 }); this.armF.circle(-28, 30, 5).fill(0xc8fff4); this.armF.circle(-28, 30, 17).fill({ color: 0x7ff0e0, alpha: 0.22 }); }
     this.armF.position.set(-6, -70); this.rig.addChild(this.armF);
     // 盾
     if (def.shield) {
@@ -111,6 +113,13 @@ export class ZombieView {
       case 'necro':
         g.moveTo(-28, -8).bezierCurveTo(-32, -50, 0, -64, 14, -52).lineTo(22, -6).quadraticCurveTo(12, -20, 10, -40).bezierCurveTo(-4, -50, -22, -38, -22, -8).closePath().fill(0x3a2a56).stroke({ width: 2.5, color: 0x221838 });
         break;
+      case 'wraith':
+        // tattered hood with two swept-back horns and glowing eyes
+        g.moveTo(-29, -4).bezierCurveTo(-34, -52, -2, -66, 16, -52).lineTo(24, -2).lineTo(15, -12).lineTo(11, -38).bezierCurveTo(-4, -48, -22, -36, -22, -6).closePath().fill(0x121820).stroke({ width: 2.5, color: 0x05080c });
+        g.moveTo(-14, -56).quadraticCurveTo(-22, -80, -2, -84).quadraticCurveTo(-12, -72, -4, -58).closePath().fill(0xd9d2c0).stroke({ width: 2, color: 0x6a6456 });
+        g.moveTo(8, -56).quadraticCurveTo(10, -80, 30, -78).quadraticCurveTo(18, -70, 18, -54).closePath().fill(0xd9d2c0).stroke({ width: 2, color: 0x6a6456 });
+        g.circle(-13, -25, 9).fill({ color: 0x7ff0e0, alpha: 0.35 }); g.circle(3, -27, 7).fill({ color: 0x7ff0e0, alpha: 0.35 });
+        break;
       case 'king':
         g.poly([-24, -38, -26, -62, -15, -48, -4, -68, 7, -48, 18, -62, 16, -38]).fill(0xffd23f).stroke({ width: 2.5, color: 0x9a7a1a });
         g.circle(-4, -46, 4).fill(0xe2475b); g.circle(-17, -44, 3).fill(0x4fa6e8); g.circle(9, -44, 3).fill(0x4fa6e8);
@@ -118,7 +127,7 @@ export class ZombieView {
     }
   }
 
-  setArmor(on: boolean) { this.gear.visible = on || this.def.look === 'runner' || this.def.look === 'leaper' || this.def.look === 'necro' || this.def.look === 'king'; }
+  setArmor(on: boolean) { this.gear.visible = on || this.def.look === 'runner' || this.def.look === 'leaper' || this.def.look === 'necro' || this.def.look === 'king' || this.def.look === 'wraith'; }
   setShield(on: boolean) { this.shieldG.visible = on; }
   setSwim(on: boolean) {
     this.swim = on; this.raft.visible = on; this.shadow.visible = !on; this.legL.visible = !on; this.legR.visible = !on;

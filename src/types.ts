@@ -70,7 +70,10 @@ export interface ZombieDef {
   smash?: boolean;         // 一击砸扁
   leap?: boolean;          // 跳过第一株植物
   summon?: { interval: number; id: string; count: number };
-  look: 'walker' | 'pot' | 'knight' | 'runner' | 'shield' | 'leaper' | 'brute' | 'necro' | 'king';
+  boss?: boolean;          // 首领：不进普通出怪池，防线只能擦伤它
+  blink?: number;          // 每隔这么多秒闪现到防守最薄弱的一行
+  enrage?: number;         // 半血以下的移速倍率（闪现也加快一倍）
+  look: 'walker' | 'pot' | 'knight' | 'runner' | 'shield' | 'leaper' | 'brute' | 'necro' | 'king' | 'wraith';
 }
 
 export interface LevelDef {

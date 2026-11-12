@@ -30,7 +30,7 @@ const ROWS: Row[] = [
   ['巨浪', 'pool', 14, ['pot', 'runner', 'knight', 'leaper', 'brute'], 5, 1.3, 250],
   ['亡者之潮', 'pool', 16, ['pot', 'runner', 'knight', 'shield', 'necro', 'brute'], 5.5, 1.4, 250],
   ['决堤', 'pool', 16, ['pot', 'runner', 'knight', 'shield', 'leaper', 'necro', 'brute'], 6.5, 1.5, 275],
-  ['终局尸王', 'pool', 16, ['pot', 'knight', 'shield', 'leaper', 'necro', 'brute', 'king'], 7, 1.7, 350],
+  ['终局尸王', 'pool', 16, ['pot', 'knight', 'shield', 'leaper', 'necro', 'brute', 'wraith', 'king'], 7, 1.7, 350, undefined, '影魇会在中途现身并不断换行，别把火力都堆在一行；尸王在最后一波登场。'],
 ];
 
 export const LEVELS: LevelDef[] = ROWS.map((r, i) => ({
@@ -45,7 +45,7 @@ export const CHAPTERS = [
 
 /** 无尽模式：三个场景各一张图 */
 export function endlessLevel(scene: SceneId): LevelDef {
-  return { id: -1, name: '无尽模式', scene, waves: Infinity, pool: ['walker', 'pot', 'runner', 'knight', 'shield', 'leaper', 'necro', 'brute', 'king'], budget: 2, growth: 1.0, sun: 250 };
+  return { id: -1, name: '无尽模式', scene, waves: Infinity, pool: ['walker', 'pot', 'runner', 'knight', 'shield', 'leaper', 'necro', 'brute', 'wraith', 'king'], budget: 2, growth: 1.0, sun: 250 };
 }
 
 export const sceneRows = (s: SceneId) => (s === 'pool' ? 6 : 5);
