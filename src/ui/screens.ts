@@ -45,7 +45,7 @@ export function menuScreen(nav: Nav): Screen {
   const prog = label(`进度 ${save.cleared}/${LEVELS.length} · 已发现融合 ${save.seen.length}/${ALL_PLANTS.length - BASE_PLANTS.length}`, 18, 0xffffff, { stroke: 0x1c2416 });
   prog.anchor.set(0.5); prog.position.set(W / 2, 510); view.addChild(prog);
 
-  const mute = button(save.mute ? '音效：关' : '音效：开', 130, 44, () => { save.mute = !save.mute; writeSave(); mute.setText(save.mute ? '音效：关' : '音效：开'); }, 0x55604e, 18);
+  const mute = button(save.mute ? '声音：关' : '声音：开', 130, 44, () => { save.mute = !save.mute; writeSave(); mute.setText(save.mute ? '声音：关' : '声音：开'); }, 0x55604e, 18);
   mute.position.set(24, 24); view.addChild(mute);
   const all = button('全部解锁', 130, 44, () => { unlockAll(); nav.menu(); }, 0x55604e, 18); all.position.set(W - 154, 24); view.addChild(all);
   let armed = false;
