@@ -12,6 +12,18 @@ pnpm build        # 打包到 dist/，可部署到任意静态服务器
 pnpm build:single # 打包成单个 dist-single/index.html
 ```
 
+也可以用 Makefile（`make help` 查看全部命令）：
+
+```bash
+make init    # 安装依赖
+make run     # 启动开发服务器
+make build   # 打包到 dist/
+make single  # 打包成单文件
+make preview # 打包后本地预览
+make check   # 只做类型检查
+make clean   # 删除打包产物
+```
+
 ## 玩法
 
 - 点卡牌再点草坪种植；把卡牌种到已有的植物上，如果有配方就会融合成新植物。
