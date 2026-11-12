@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-single/
+# single-file build output copy
+play.html
+.DS_Store
+*.local
+.env*
